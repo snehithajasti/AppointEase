@@ -28,6 +28,37 @@ function BookAppointment() {
 
     const [selectedDate, setSelectedDate] = useState("");
     const [selectedTime, setSelectedTime] = useState("");
+    const [isConfirmed, setIsConfirmed] = useState(false);
+
+    const handleConfirmAppointment = () => {
+        const newAppointment = {
+            id: Date.now(),
+            serviceId: service.id,
+            serviceName: service.name,
+            category: service.category,
+            provider: service.provider,
+            date: selectedDate,
+            time: selectedTime,
+            duration: service.duration,
+            price: service.price,
+            status: "PENDING",
+        };
+
+        const existingAppointments = 
+           JSON.parse(localStorage.getItem("appointments")) || [];
+
+        const updatedAppointments = [
+            ...existingAppointments,
+            newAppointment,
+        ];
+
+        localStorage.setItem(
+            "appointments",
+            JSON.stringify(updatedAppointments)
+        );
+
+        setIsConfirmed(true);
+    };
 
     if(!service) {
         return(
@@ -165,6 +196,54 @@ function BookAppointment() {
                             )}
                             {selectedDate && selectedTime && (
                                 <div className="mt-10 border-t border-slate-200 pt-8">
+                                    {isConfirmed ? (
+                                        <div className="rounded-2xl bg-green-50 p-8 text-center">
+                                            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-green-100">
+                                                <span className="text-2xl text-green-600">✓</span>
+                                            </div>
+                                            <h2 className="mt-5 text-2xl font-bold text-slate-900">
+                                                Booking Confirmed!
+                                            </h2>
+                                            <p className="mt-2 text-sm text-slate-600">
+                                                Your appointment has been successfully booked.
+                                            </p>
+                                            <div className="mt-6 rounded-2xl bg-white p-5 text-left">
+                                                <p className="font-semibold text-slate-900">
+                                                    {service.name}
+                                                </p>
+                                                <p className="mt-1 text-sm text-slate-500">
+                                                    {service.provider}
+                                                </p>
+                                                <div className="mt-4 space-y-2 text-sm text-slate-600">
+                                                    <p>
+                                                        Date:{" "}
+                                                        <span className="font-medium text-slate-900">
+                                                            {selectedDate}
+                                                        </span>
+                                                    </p>
+                                                    <p>
+                                                        Time:{" "}
+                                                        <span className="font-medium text-slate-900">
+                                                            {selectedTime}
+                                                        </span>
+                                                    </p>
+                                                    <p>
+                                                        Total:{" "}
+                                                        <span className="font-semibold text-blue-600">
+                                                            {service.price}
+                                                        </span>
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <Link
+                                               to="/my-appointments"
+                                               className="mt-6 inline-block rounded-xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
+                                            > 
+                                               View My Appointments
+                                            </Link>
+                                        </div>
+                                    ):(
+                                        <div>
                                     <h2 className="text-lg font-semibold text-slate-900">
                                         Booking Summary
                                     </h2>
@@ -224,10 +303,13 @@ function BookAppointment() {
                                     </div>
                                     <button
                                       type="button"
+                                      onClick={handleConfirmAppointment}
                                       className="mt-6 w-full rounded-xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
                                     >
                                         Confirm Appointment
                                     </button>
+                                    </div>
+                                    )}
                                 </div>
                             )}
                         </div>
