@@ -1,5 +1,5 @@
 import { ArrowRight } from "lucide-react";
-import { services } from "../data/services";
+import { serviceCategories } from "../data/serviceCategories";
 import ServiceCard from "./ServiceCard";
 
 function PopularServices() {
@@ -25,7 +25,7 @@ function PopularServices() {
                 </div>
 
                 <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                    {services.map((service) => (
+                    {serviceCategories.map((service) => (
                         <ServiceCard 
                            key={service.id}
                            service={service}

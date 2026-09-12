@@ -1,29 +1,17 @@
-import Navbar from "./components/Navbar";
-import Hero from "./components/Hero";
-import PopularServices from "./components/PopularServices";
-import HowItWorks from "./components/HowItWorks";
-import ProviderSection from "./components/ProviderSection";
-import Testimonials from "./components/Testimonials";
-import TrustSection from "./components/TrustSection";
-import Footer from "./components/Footer";
-import FinalCTA from "./components/FinalCTA";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import Home from "./pages/Home";
+import Services from "./pages/Services";
+import ServiceDetails from "./pages/ServiceDetails";
 
-
-function App(){
-  return(
-    <div className="min-h-screen bg-white">
-      <Navbar />
-      <main>
-        <Hero />
-        <PopularServices />
-        <HowItWorks />
-        <ProviderSection />
-        <Testimonials />
-        <TrustSection />
-        <FinalCTA />
-        <Footer />
-      </main>
-    </div>
+function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/services" element={<Services />} />
+        <Route path="/services/:id" element={<ServiceDetails />} />
+      </Routes>
+    </BrowserRouter>
   );
 }
 

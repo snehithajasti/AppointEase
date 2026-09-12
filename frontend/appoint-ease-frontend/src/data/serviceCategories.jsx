@@ -8,7 +8,7 @@ import {
     icons,
 } from "lucide-react";
 
-export const services = [
+export const serviceCategories = [
     {
         id: 1,
         name: "Health & Wellness",
