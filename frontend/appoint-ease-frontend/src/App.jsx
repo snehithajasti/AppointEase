@@ -6,6 +6,7 @@ import BookAppointment from "./pages/BookAppointment";
 import MyAppointments from "./pages/MyAppointments";
 import ProviderServices from "./pages/ProviderServices";
 import ProviderAvailability from "./pages/ProviderAvailability";
+import ProviderAppointments from "./pages/ProviderAppointments";
 
 function App() {
   return (
@@ -18,6 +19,7 @@ function App() {
         <Route path="/my-appointments" element={<MyAppointments />} />
         <Route path="/provider/services" element={<ProviderServices />} />
         <Route path="/provider/availability" element={<ProviderAvailability />} />
+        <Route path="/provider/appointments" element={<ProviderAppointments />} />
       </Routes>
     </BrowserRouter>
   );
