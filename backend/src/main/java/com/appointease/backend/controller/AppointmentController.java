@@ -25,4 +25,36 @@ public class AppointmentController {
     public List<Appointment> getAllAppointments(){
         return appointmentService.getAllAppointments();
     }
+
+    @GetMapping("/customer/{customerId}")
+    public List<Appointment> getAppointmentsByCustomer(
+            @PathVariable Long customerId){
+
+        return appointmentService.getAppointmentsByCustomer(customerId);
+    }
+
+    @GetMapping("/provider/{providerId}")
+    public List<Appointment> getAppointmentsByProvider(
+            @PathVariable Long providerId){
+
+        return  appointmentService.getAppointmentsByProvider(providerId);
+    }
+
+    @PutMapping("/{appointmentId}/confirm")
+    public Appointment confirmAppointment(
+            @PathVariable Long appointmentId){
+        return appointmentService.confirmAppointment(appointmentId);
+    }
+
+    @PutMapping("/{appointmentId}/complete")
+    public Appointment completeAppointment(
+            @PathVariable Long appointmentId){
+        return appointmentService.completeAppointment(appointmentId);
+    }
+
+    @PutMapping("/{appointmentId}/cancel")
+    public Appointment cancelAppointment(
+            @PathVariable Long appointmentId){
+        return appointmentService.cancelAppointment(appointmentId);
+    }
 }

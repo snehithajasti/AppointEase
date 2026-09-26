@@ -13,4 +13,8 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
             User provider,
             LocalDate appointmentDate
     );
+
+    List<Appointment> findByCustomer(User customer);
+
+    List<Appointment> findByService_Provider(User provider);
 }

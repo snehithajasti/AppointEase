@@ -1,9 +1,6 @@
 package com.appointease.backend.service;
 
-import com.appointease.backend.entity.Appointment;
-import com.appointease.backend.entity.Availability;
-import com.appointease.backend.entity.Service;
-import com.appointease.backend.entity.User;
+import com.appointease.backend.entity.*;
 import com.appointease.backend.repository.AppointmentRepository;
 import com.appointease.backend.repository.AvailabilityRepository;
 import com.appointease.backend.repository.ServiceRepository;
@@ -98,5 +95,72 @@ public class AppointmentService {
 
     public List<Appointment> getAllAppointments(){
         return appointmentRepository.findAll();
+    }
+
+    public List<Appointment> getAppointmentsByCustomer(Long customerId){
+        User customer = userRepository
+                .findById(customerId)
+                .orElseThrow(() -> new RuntimeException("Customer not found"));
+
+        return appointmentRepository.findByCustomer(customer);
+    }
+
+    public List<Appointment> getAppointmentsByProvider(Long providerId){
+        User provider = userRepository
+                .findById(providerId)
+                .orElseThrow(() -> new RuntimeException("Provider not found"));
+
+        return appointmentRepository.findByService_Provider(provider);
+    }
+
+    public Appointment confirmAppointment(Long appointmentId){
+
+        Appointment appointment = appointmentRepository
+                .findById(appointmentId)
+                .orElseThrow(() -> new RuntimeException("Appointment not found"));
+
+        if (appointment.getStatus() != AppointmentStatus.PENDING){
+            throw new RuntimeException(
+                    "Only pending appointments can be confirmed"
+            );
+        }
+
+        appointment.setStatus(AppointmentStatus.CONFIRMED);
+
+        return appointmentRepository.save(appointment);
+    }
+
+    public Appointment completeAppointment(Long appointmentId){
+        Appointment appointment = appointmentRepository
+                .findById(appointmentId)
+                .orElseThrow(() -> new RuntimeException("Appointment not found"));
+
+        if (appointment.getStatus() != AppointmentStatus.CONFIRMED){
+            throw new RuntimeException(
+                    "Only confirmed appointments can be completed"
+            );
+        }
+
+        appointment.setStatus(AppointmentStatus.COMPLETED);
+
+        return appointmentRepository.save(appointment);
+    }
+
+    public Appointment cancelAppointment(Long appointmentId){
+
+        Appointment appointment = appointmentRepository
+                .findById(appointmentId)
+                .orElseThrow(() -> new RuntimeException("Appointment not found"));
+
+        if (appointment.getStatus() != AppointmentStatus.PENDING
+                && appointment.getStatus() != AppointmentStatus.CONFIRMED){
+            throw new RuntimeException(
+                    "Only pending or confirmed appointments can be cancelled"
+            );
+        }
+
+        appointment.setStatus(AppointmentStatus.CANCELLED);
+
+        return appointmentRepository.save(appointment);
     }
 }
