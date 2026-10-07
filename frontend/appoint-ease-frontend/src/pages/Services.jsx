@@ -1,8 +1,6 @@
 import { useState, useEffect } from "react";
 import { Search } from "lucide-react";
-//import { services } from "../data/services";
 import ServiceListingCard from "../components/ServiceListingCard";
-//import { Link } from "react-router-dom";
 import { getServices } from "../api/serviceApi";
 
 function Services() {
