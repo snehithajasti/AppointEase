@@ -1,18 +1,24 @@
 import { Plus, X } from "lucide-react";
-import { services } from "../data/services";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { getServicesByProvider,createService, updateService, deleteService } from "../api/serviceApi";
 
 function ProviderServices() {
 
     const [showForm, setShowForm] = useState(false);
 
-    const [providerServices, setProviderServices] = useState(() => {
-        const storedServices = localStorage.getItem("providerServices");
+    const [providerServices, setProviderServices] = useState([]);
 
-        return storedServices
-            ? JSON.parse(storedServices)
-            : services;
-    });
+    useEffect(() => {
+        const loadProviderServices = async () => {
+            try {
+                const data = await getServicesByProvider(2);
+                setProviderServices(data);
+            } catch (error) {
+                console.error("Failed to load provider services:", error);
+            }
+        };
+        loadProviderServices();
+    },[]);
 
     const [editingServiceId, setEditingServiceId] = useState(null);
 
@@ -24,7 +30,7 @@ function ProviderServices() {
         duration: "",
     });
 
-    const handleAddService = () => {
+    const handleAddService = async () => {
         if (
             !formData.name ||
             !formData.category ||
@@ -36,35 +42,42 @@ function ProviderServices() {
             return;
         }
 
-        const newService = {
-            id: Date.now(),
+        const serviceData = {
             name: formData.name,
             category: formData.category,
             description: formData.description,
             price: Number(formData.price),
             duration: Number(formData.duration),
-            provider: "My Business",
+            provider: {
+                id: 2
+            }
         };
 
-        const updatedServices = [...providerServices, newService];
+        try {
+            const newService = await createService(serviceData);
 
-        setProviderServices(updatedServices);
+            setProviderServices((currentServices) => [
+                ...currentServices,
+                {
+                    ...newService,
+                    provider: "Ananya Rao"
+                }
+            ]);
 
-        localStorage.setItem(
-            "providerServices",
-            JSON.stringify(updatedServices)
-        );
+            setFormData({
+                name: "",
+                category: "",
+                description: "",
+                price: "",
+                duration: "",
+            });
 
-        setFormData({
-            name: "",
-            category: "",
-            description: "",
-            price: "",
-            duration: "",
-        });
+            setShowForm(false);
 
-        setShowForm(false);
-    }
+        } catch (error) {
+            console.error("Failed to create service:", error);
+        }
+    };
 
     const handleEditService = (service) => {
         setEditingServiceId(service.id);
@@ -80,48 +93,46 @@ function ProviderServices() {
         setShowForm(true);
     }
 
-    const handleUpdateService = () => {
-        if (
-            !formData.name ||
-            !formData.category ||
-            !formData.description ||
-            !formData.price ||
-            !formData.duration
-        ) {
-            alert("Please fill in all fields.");
-            return;
+    const handleUpdateService = async () => {
+        try {
+            const serviceData = {
+                name: formData.name,
+                category: formData.category,
+                description: formData.description,
+                price: Number(formData.price),
+                duration: Number(formData.duration)
+            };
+
+            const updatedService = await updateService(
+                editingServiceId,
+                serviceData
+            );
+
+            setProviderServices(currentServices =>
+                currentServices.map(service =>
+                    service.id === editingServiceId
+                    ? {
+                        ...updatedService,
+                        provider: "Ananya Rao"
+                    }
+                    : service
+                )
+            );
+
+            setEditingServiceId(null);
+            setShowForm(false);
+
+            setFormData({
+                name: "",
+                category: "",
+                description: "",
+                price: "",
+                duration: ""
+            });
+
+        } catch (error) {
+            console.error("Error updating service:", error);
         }
-
-        const updatedServices = providerServices.map((service) =>
-            service.id === editingServiceId
-                ? {
-                    ...service,
-                    name: formData.name,
-                    category: formData.category,
-                    description: formData.description,
-                    price: Number(formData.price),
-                    duration: Number(formData.duration),
-                }
-                : service
-        );
-
-        setProviderServices(updatedServices);
-
-        localStorage.setItem(
-            "providerServices",
-            JSON.stringify(updatedServices)
-        );
-
-        setFormData({
-            name: "",
-            category: "",
-            description: "",
-            price: "",
-            duration: "",
-        });
-
-        setEditingServiceId(null);
-        setShowForm(false);
     };
 
     const handleCloseForm = () => {
@@ -137,7 +148,7 @@ function ProviderServices() {
         });
     };
 
-    const handleDeleteService = (id) => {
+    const handleDeleteService = async (id) => {
         const confirmDelete = window.confirm(
             "Are you sure you want to delete this service?"
         );
@@ -146,16 +157,15 @@ function ProviderServices() {
             return;
         }
 
-        const updatedServices = providerServices.filter(
-            (service) => service.id !== id
-        );
+        try {
+            await deleteService(id);
 
-        setProviderServices(updatedServices);
-
-        localStorage.setItem(
-            "providerServices",
-            JSON.stringify(updatedServices)
-        );
+            setProviderServices(currentServices =>
+                currentServices.filter(service => service.id !== id)   
+            );
+        } catch (error) {
+            console.error("Error deleting service:",error);
+        }
     };
 
     return (

@@ -15,6 +15,8 @@ public class Service {
     @Column(nullable = false)
     private String name;
 
+    private String category;
+
     @Column(nullable = false)
     private String description;
 
@@ -32,8 +34,9 @@ public class Service {
 
     }
 
-    public Service(String description, Integer duration, String name, BigDecimal price, User provider) {
+    public Service(String description, String category, Integer duration, String name, BigDecimal price, User provider) {
         this.description = description;
+        this.category = category;
         this.duration = duration;
         this.name = name;
         this.price = price;
@@ -83,5 +86,13 @@ public class Service {
 
     public void setProvider(User provider) {
         this.provider = provider;
+    }
+
+    public String getCategory() {
+        return category;
+    }
+
+    public void setCategory(String category) {
+        this.category = category;
     }
 }

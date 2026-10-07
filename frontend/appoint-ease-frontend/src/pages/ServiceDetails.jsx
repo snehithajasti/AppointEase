@@ -1,13 +1,39 @@
+import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { Clock, IndianRupee, UserRound, ArrowLeft } from "lucide-react";
-import { services } from "../data/services";
+import { getService } from "../api/serviceApi";
 
 function ServiceDetails() {
     const { id } = useParams();
     
-    const service = services.find(
-        (service) => service.id === Number(id)
-    );
+    const [service, setService] = useState(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const loadService = async () => {
+            try {
+                const data = await getService(id);
+                setService(data);
+            } catch (error) {
+                console.error("Failed to load service:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        loadService();
+    },[id]);
+
+    if(loading){
+        return(
+            <div className="min-h-screen bg-slate-50 px-6 py-16">
+                <div className="mx-auto max-w-3xl text-center">
+                    <p className="text-slate-500">
+                        Loading service...
+                    </p>
+                </div>
+            </div>
+        );
+    }
 
     if(!service){
         return(

@@ -1,12 +1,27 @@
 import { CalendarDays, Clock, IndianRupee, UserRound } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import {
+    getAppointmentsByProvider,
+    confirmAppointment,
+    completeAppointment,
+    cancelAppointment,
+} from "../api/appointmentApi";
 
 function ProviderAppointments() {
 
-    const [appointments, setAppointments] = useState(() => {
-        const storedAppointments = localStorage.getItem("appointments");
-        return storedAppointments ? JSON.parse(storedAppointments) : [];
-    });
+    const [appointments, setAppointments] = useState([]);
+
+    useEffect(() => {
+        const loadAppointments = async () => {
+            try {
+                const data = await getAppointmentsByProvider(2);
+                setAppointments(data);
+            } catch (error) {
+                console.error("Failed to load provider appointments:", error);
+            }
+        };
+        loadAppointments();
+    }, []);
 
     const upcomingAppointments = appointments.filter(
         (appointment) =>
@@ -20,54 +35,61 @@ function ProviderAppointments() {
             appointment.status === "CANCELLED"
     );
 
-    const handleConfirm = (id) => {
-        const updatedAppointments = appointments.map((appointment) =>
-            appointment.id === id
-                ? { ...appointment, status: "CONFIRMED" }
-                : appointment
-        );
+    const handleConfirm = async (id) => {
+        try {
+            const updatedAppointment = await confirmAppointment(id);
 
-        setAppointments(updatedAppointments);
-        localStorage.setItem(
-            "appointments",
-            JSON.stringify(updatedAppointments)
-        );
+            setAppointments((currentAppointments) =>
+                currentAppointments.map((appointment) =>
+                    appointment.id === id
+                        ? updatedAppointment
+                        : appointment
+                )
+            );
+        } catch (error) {
+            console.error("Failed to confirm appointment:", error);
+        }
     };
 
-    const handleComplete = (id) => {
-        const updatedAppointments = appointments.map((appointment) =>
-            appointment.id === id
-                ? { ...appointment, status: "COMPLETED" }
-                : appointment
-        );
-        setAppointments(updatedAppointments);
-        localStorage.setItem(
-            "appointments",
-            JSON.stringify(updatedAppointments)
-        );
+    const handleComplete = async (id) => {
+        try {
+            const updatedAppointment = await completeAppointment(id);
+
+            setAppointments((currentAppointments) =>
+                currentAppointments.map((appointment) =>
+                    appointment.id === id
+                        ? updatedAppointment
+                        : appointment
+                )
+            );
+        } catch (error) {
+            console.error("Failed to complete appointment:", error);
+        }
     };
 
-    const handleCancel = (id) => {
+    const handleCancel = async (id) => {
 
         const confirmed = window.confirm(
             "Are you sure you want to cancel this appointment?"
         );
 
-        if(!confirmed){
+        if (!confirmed) {
             return;
         }
 
-        const updatedAppointments = appointments.map((appointment) => 
-           appointment.id === id
-            ? {...appointment, status: "CANCELLED" }
-            : appointment
-        );
+        try {
+            const updatedAppointment = await cancelAppointment(id);
 
-        setAppointments(updatedAppointments);
-        localStorage.setItem(
-            "appointments",
-            JSON.stringify(updatedAppointments)
-        );
+            setAppointments((currentAppointments) =>
+                currentAppointments.map((appointment) =>
+                    appointment.id === id
+                        ? updatedAppointment
+                        : appointment
+                )
+            );
+        } catch (error) {
+            console.error("Failed to cancel appointment:", error);
+        }
     };
 
     return (
@@ -150,7 +172,7 @@ function ProviderAppointments() {
                                                     Date
                                                 </p>
                                                 <p className="text-sm font-medium text-slate-800">
-                                                    {appointment.date}
+                                                    {appointment.appointmentDate}
                                                 </p>
                                             </div>
                                         </div>
@@ -161,7 +183,7 @@ function ProviderAppointments() {
                                                     Time
                                                 </p>
                                                 <p className="text-sm font-medium text-slate-800">
-                                                    {appointment.time}
+                                                    {appointment.startTime}
                                                 </p>
                                             </div>
                                         </div>
@@ -185,7 +207,7 @@ function ProviderAppointments() {
                                             onClick={() => {
                                                 if (appointment.status === "PENDING") {
                                                     handleConfirm(appointment.id);
-                                                } else if(appointment.status === "CONFIRMED"){
+                                                } else if (appointment.status === "CONFIRMED") {
                                                     handleComplete(appointment.id);
                                                 }
                                             }}
@@ -197,9 +219,9 @@ function ProviderAppointments() {
                                                     : "Complete"
                                             }
                                         </button>
-                                        <button 
-                                           onClick={() => handleCancel(appointment.id)}
-                                           className="rounded-xl border border-red-200 px-4 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-50"
+                                        <button
+                                            onClick={() => handleCancel(appointment.id)}
+                                            className="rounded-xl border border-red-200 px-4 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-50"
                                         >
                                             Cancel
                                         </button>
@@ -276,7 +298,7 @@ function ProviderAppointments() {
                                                     Date
                                                 </p>
                                                 <p className="text-sm font-medium text-slate-800">
-                                                    {appointment.date}
+                                                    {appointment.appointmentDate}
                                                 </p>
                                             </div>
                                         </div>
@@ -287,7 +309,7 @@ function ProviderAppointments() {
                                                     Time
                                                 </p>
                                                 <p className="text-sm font-medium text-slate-800">
-                                                    {appointment.time}
+                                                    {appointment.startTime}
                                                 </p>
                                             </div>
                                         </div>

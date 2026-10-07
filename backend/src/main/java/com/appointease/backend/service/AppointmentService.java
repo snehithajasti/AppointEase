@@ -1,5 +1,6 @@
 package com.appointease.backend.service;
 
+import com.appointease.backend.dto.AppointmentResponseDTO;
 import com.appointease.backend.entity.*;
 import com.appointease.backend.repository.AppointmentRepository;
 import com.appointease.backend.repository.AvailabilityRepository;
@@ -105,12 +106,56 @@ public class AppointmentService {
         return appointmentRepository.findByCustomer(customer);
     }
 
+    public List<AppointmentResponseDTO> getAppointmentDTOsByCustomer(Long customerId){
+        User customer = userRepository.findById(customerId)
+                .orElseThrow(() -> new RuntimeException("Customer not found"));
+
+        return appointmentRepository.findByCustomer(customer)
+                .stream()
+                .map(appointment -> new AppointmentResponseDTO(
+                        appointment.getId(),
+                        appointment.getAppointmentDate(),
+                        appointment.getStartTime(),
+                        appointment.getEndTime(),
+                        appointment.getStatus().name(),
+                        appointment.getService().getId(),
+                        appointment.getService().getName(),
+                        appointment.getService().getCategory(),
+                        appointment.getService().getProvider().getName(),
+                        appointment.getService().getPrice(),
+                        appointment.getService().getDuration()
+                ))
+                .toList();
+    }
+
     public List<Appointment> getAppointmentsByProvider(Long providerId){
         User provider = userRepository
                 .findById(providerId)
                 .orElseThrow(() -> new RuntimeException("Provider not found"));
 
         return appointmentRepository.findByService_Provider(provider);
+    }
+
+    public List<AppointmentResponseDTO> getAppointmentDTOsByProvider(Long providerId){
+        User provider = userRepository.findById(providerId)
+                .orElseThrow(() -> new RuntimeException("Provider not found"));
+
+        return appointmentRepository.findByService_Provider(provider)
+                .stream()
+                .map(appointment -> new AppointmentResponseDTO(
+                        appointment.getId(),
+                        appointment.getAppointmentDate(),
+                        appointment.getStartTime(),
+                        appointment.getEndTime(),
+                        appointment.getStatus().name(),
+                        appointment.getService().getId(),
+                        appointment.getService().getName(),
+                        appointment.getService().getCategory(),
+                        appointment.getService().getProvider().getName(),
+                        appointment.getService().getPrice(),
+                        appointment.getService().getDuration()
+                ))
+                .toList();
     }
 
     public Appointment confirmAppointment(Long appointmentId){

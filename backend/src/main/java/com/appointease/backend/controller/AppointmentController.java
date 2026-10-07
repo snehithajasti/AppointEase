@@ -1,13 +1,16 @@
 package com.appointease.backend.controller;
 
+import com.appointease.backend.dto.AppointmentResponseDTO;
 import com.appointease.backend.entity.Appointment;
 import com.appointease.backend.service.AppointmentService;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.CrossOrigin;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/appointments")
+@CrossOrigin(origins = "http://localhost:5173")
 public class AppointmentController {
 
     private final AppointmentService appointmentService;
@@ -27,17 +30,17 @@ public class AppointmentController {
     }
 
     @GetMapping("/customer/{customerId}")
-    public List<Appointment> getAppointmentsByCustomer(
+    public List<AppointmentResponseDTO> getAppointmentsByCustomer(
             @PathVariable Long customerId){
 
-        return appointmentService.getAppointmentsByCustomer(customerId);
+        return appointmentService.getAppointmentDTOsByCustomer(customerId);
     }
 
     @GetMapping("/provider/{providerId}")
-    public List<Appointment> getAppointmentsByProvider(
+    public List<AppointmentResponseDTO> getAppointmentsByProvider(
             @PathVariable Long providerId){
 
-        return  appointmentService.getAppointmentsByProvider(providerId);
+        return  appointmentService.getAppointmentDTOsByProvider(providerId);
     }
 
     @PutMapping("/{appointmentId}/confirm")

@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { createAvailability, deleteAvailability, getAvailabilityByProvider, updateAvailability } from "../api/availabilityApi";
 
 function ProviderAvailability() {
 
@@ -12,26 +13,56 @@ function ProviderAvailability() {
         "Sunday",
     ];
 
-    const [availability, setAvailability] = useState(() => {
-        const storedAvailability = localStorage.getItem("providerAvailability");
-
-        if (storedAvailability) {
-            return JSON.parse(storedAvailability);
-        }
-
-        return days.map((day) => ({
+    const [availability, setAvailability] = useState(
+        days.map((day) => ({
             day,
-            enabled: day !== "Saturday" && day !== "Sunday",
+            enabled: false,
             startTime: "09:00",
             endTime: "17:00",
-        }));
-    });
+            id: null,
+        }))
+    );
+
+    useEffect(() => {
+        const loadAvailability = async () => {
+            try {
+                const data = await getAvailabilityByProvider(2);
+
+                setAvailability(currentAvailability =>
+                    currentAvailability.map(dayItem => {
+                        const backenditem = data.find(
+                            item => 
+                                item.dayOfWeek.toLowerCase() ===
+                                dayItem.day.toLowerCase()
+                        );
+
+                        if(backenditem) {
+                            return {
+                                day : dayItem.day,
+                                enabled: true,
+                                startTime: backenditem.startTime.slice(0, 5),
+                                endTime: backenditem.endTime.slice(0, 5),
+                                id: backenditem.id,
+                            };
+                        }
+
+                        return dayItem;
+                    })
+                );
+            } catch (error) {
+                console.error(
+                    "Error loading availability:", error
+                );
+            }
+        };
+        loadAvailability();
+    },[]);
     
     const isValidTime = (startTime, endTime) => {
         return startTime < endTime;
     }
 
-    const handleSaveAvailability = () => {
+    const handleSaveAvailability = async () => {
         const invalidDay = availability.find(
             (item) =>
                 item.enabled &&
@@ -44,11 +75,70 @@ function ProviderAvailability() {
             return;
         }
 
-        localStorage.setItem(
-            "providerAvailability",
-            JSON.stringify(availability)
-        );
-        alert("Availability saved successfully.");
+        try {
+            for (const item of availability){
+                if(item.enabled) {
+                    const availabilityData = {
+                        dayOfWeek: item.day.toUpperCase(),
+                        startTime: item.startTime + ":00",
+                        endTime: item.endTime + ":00",
+                        provider: { id: 2 }
+                    };
+
+                    if(item.id) {
+                        const updatedAvailability = 
+                            await updateAvailability(
+                                item.id,
+                                availabilityData
+                            );
+
+                        setAvailability(currentAvailability =>
+                            currentAvailability.map(dayItem =>
+                                dayItem.day === item.day
+                                ? {
+                                    ...dayItem,
+                                    id: updatedAvailability.id
+                                }
+                                : dayItem
+                            )
+                        );
+                    } else {
+                        const newAvailability = 
+                            await createAvailability(
+                                availabilityData
+                            );
+
+                        setAvailability(currentAvailability =>
+                            currentAvailability.map(dayItem =>
+                                dayItem.day === item.day
+                                ? {
+                                    ...dayItem,
+                                    id: newAvailability.id
+                                }
+                                : dayItem
+                            )
+                        );
+                    }
+                } else if (item.id) {
+                    await deleteAvailability(item.id);
+
+                    setAvailability(currentAvailability =>
+                        currentAvailability.map(dayItem =>
+                            dayItem.day === item.day
+                            ? {
+                                ...dayItem,
+                                id: null
+                            }
+                            : dayItem
+                        )
+                    );
+                }
+            }
+            alert("Availability saved successfully.")
+        } catch (error) {
+            console.error("Error saving availability:", error);
+            alert("Failed to save availability.");
+        }
     }
 
     return (

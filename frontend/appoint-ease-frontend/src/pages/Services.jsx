@@ -1,12 +1,26 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Search } from "lucide-react";
-import { services } from "../data/services";
+//import { services } from "../data/services";
 import ServiceListingCard from "../components/ServiceListingCard";
-import { Link } from "react-router-dom";
+//import { Link } from "react-router-dom";
+import { getServices } from "../api/serviceApi";
 
 function Services() {
+    const [services, setServices] = useState([]);
     const [searchTerm, setSearchTerm] = useState("");
     const [selectedCategory, setSelectedCategory] = useState("All");
+
+    useEffect(() => {
+        const loadServices = async () => {
+            try {
+                const data = await getServices();
+                setServices(data);
+            } catch (error) {
+                console.error("Failed to load services:", error);
+            }
+        };
+        loadServices();
+    },[]);
 
     const categories = [
         "All",

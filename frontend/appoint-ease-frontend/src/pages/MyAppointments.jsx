@@ -1,49 +1,60 @@
 import { CalendarDays, Clock, IndianRupee, UserRound } from "lucide-react";
-import { useEffect,useState } from "react";
+import { useEffect, useState } from "react";
+import { getAppointmentsByCustomer, cancelAppointment } from "../api/appointmentApi";
 
 function MyAppointments() {
 
     const [appointments, setAppointments] = useState([]);
 
     useEffect(() => {
-        const storedAppointments = 
-           JSON.parse(localStorage.getItem("appointments")) || [];
+        const loadAppointments = async () => {
+            try {
+                const data = await getAppointmentsByCustomer(1);
+                setAppointments(data);
+            } catch (error) {
+                console.error("Failed to load appointments:", error);
+            }
+        };
+        loadAppointments();
+    }, []);
 
-        setAppointments(storedAppointments);
-    },[]);
-
-    const handleCancelAppointment = (id) => {
+    const handleCancelAppointment = async (id) => {
         const confirmCancel = window.confirm(
             "Are you sure you want to cancel this appointment?"
         );
 
-        if(!confirmCancel) {
+        if (!confirmCancel) {
             return;
         }
 
-        const updatedAppointments = appointments.map((appointment) =>
-           appointment.id === id
-           ? {...appointment, status: "CANCELLED" }
-           : appointment
-        );
+        try {
+            const updatedAppointment = await cancelAppointment(id);
 
-        localStorage.setItem("appointments",JSON.stringify(updatedAppointments));
-        setAppointments(updatedAppointments);
-    }
+            setAppointments((currentAppointments) =>
+                currentAppointments.map((appointment) =>
+                    appointment.id === id
+                        ? updatedAppointment
+                        : appointment
+                )
+            );
+        } catch (error) {
+            console.error("Failed to cancel appointment:", error);
+        }
+    };
 
     const upcomingAppointments = appointments.filter(
         (appointment) =>
-            appointment.status === "CONFIRMED" || 
+            appointment.status === "CONFIRMED" ||
             appointment.status === "PENDING"
     );
 
     const pastAppointments = appointments.filter(
-        (appointment) => 
+        (appointment) =>
             appointment.status === "COMPLETED" ||
             appointment.status === "CANCELLED"
     );
 
-    return(
+    return (
         <div className="min-h-screen bg-slate-50">
             <div className="mx-auto max-w-7xl px-6 py-16">
                 <div className="mb-10">
@@ -66,14 +77,14 @@ function MyAppointments() {
                     {upcomingAppointments.length > 0 ? (
                         <div className="grid gap-5 lg:grid-cols-2">
                             {upcomingAppointments.map((appointment) => (
-                                <AppointmentCard 
-                                  key={appointment.id}
-                                  appointment={appointment}
-                                  onCancel={handleCancelAppointment}
+                                <AppointmentCard
+                                    key={appointment.id}
+                                    appointment={appointment}
+                                    onCancel={handleCancelAppointment}
                                 />
                             ))}
                         </div>
-                    ):(
+                    ) : (
                         <EmptyState message="You don't have an upcoming appointments." />
                     )}
                 </section>
@@ -88,12 +99,12 @@ function MyAppointments() {
                         <div className="grid gap-5 lg:grid-cols-2">
                             {pastAppointments.map((appointment) => (
                                 <AppointmentCard
-                                   key={appointment.id}
-                                   appointment={appointment} 
+                                    key={appointment.id}
+                                    appointment={appointment}
                                 />
                             ))}
                         </div>
-                    ):(
+                    ) : (
                         <EmptyState message="You don't have any past appointments." />
                     )}
                 </section>
@@ -102,7 +113,7 @@ function MyAppointments() {
     );
 }
 
-function AppointmentCard({ appointment, onCancel}) {
+function AppointmentCard({ appointment, onCancel }) {
     const statusStyles = {
         CONFIRMED: "bg-green-50 text-green-700",
         PENDING: "bg-yellow-50 text-yellow-700",
@@ -110,7 +121,7 @@ function AppointmentCard({ appointment, onCancel}) {
         CANCELLED: "bg-red-50 text-red-700",
     };
 
-    return(
+    return (
         <div className="rounded-2xl bg-white p-6 shadow-sm">
             <div className="flex items-start justify-between gap-4">
                 <div>
@@ -144,7 +155,7 @@ function AppointmentCard({ appointment, onCancel}) {
                             Date
                         </p>
                         <p className="text-sm font-medium text-slate-900">
-                            {appointment.date}
+                            {appointment.appointmentDate}
                         </p>
                     </div>
                 </div>
@@ -155,7 +166,7 @@ function AppointmentCard({ appointment, onCancel}) {
                             Time
                         </p>
                         <p className="text-sm font-medium text-slate-900">
-                            {appointment.time}
+                            {appointment.startTime}
                         </p>
                     </div>
                 </div>
@@ -175,17 +186,17 @@ function AppointmentCard({ appointment, onCancel}) {
                 </div>
             </div>
             {appointment.status === "CONFIRMED" ||
-            appointment.status === "PENDING" ? (
+                appointment.status === "PENDING" ? (
                 <button type="button" onClick={() => onCancel(appointment.id)} className="mt-5 w-full rounded-xl border border-red-200 px-4 py-3 text-sm font-semibold text-red-600 transition hover:bg-red-50">
                     Cancel Appointment
                 </button>
-            ): null}
+            ) : null}
         </div>
     );
 }
 
-function EmptyState({message}) {
-    return(
+function EmptyState({ message }) {
+    return (
         <div className="rounded-2xl bg-white px-6 py-12 text-center shadow-sm">
             <p className="text-slate-500">{message}</p>
         </div>

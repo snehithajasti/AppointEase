@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import {
     ArrowLeft,
@@ -7,58 +7,224 @@ import {
     IndianRupee,
     UserRound,
 } from "lucide-react";
-import { services } from "../data/services";
+import { getService } from "../api/serviceApi";
+import { createAppointment, getAppointmentsByProvider } from "../api/appointmentApi";
+import { getAvailabilityByProvider } from "../api/availabilityApi";
 
 function BookAppointment() {
     const { id } = useParams();
 
-    const service = services.find(
-        (service) => service.id === Number(id)
-    );
+    const [service, setService] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [bookingError, setBookingError] = useState("");
 
-    const availableSlots = [
-        "9:00 AM",
-        "10:00 AM",
-        "11:00 AM",
-        "1:00 PM",
-        "2:00 PM",
-        "3:00 PM",
-        "4:00 PM",
-    ];
+    useEffect(() => {
+        const loadService = async () => {
+            try {
+                const data = await getService(id);
+                setService(data);
+
+                const availabilityData = await getAvailabilityByProvider(
+                    data.providerId
+                );
+
+                setAvailability(availabilityData);
+
+                const appointmentsData = await getAppointmentsByProvider(
+                    data.providerId
+                );
+
+                setProviderAppointments(appointmentsData);
+
+            } catch (error) {
+                console.error("Error loading service:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        loadService();
+    },[id]);
 
     const [selectedDate, setSelectedDate] = useState("");
     const [selectedTime, setSelectedTime] = useState("");
     const [isConfirmed, setIsConfirmed] = useState(false);
+    const [availability, setAvailability] = useState(null);
+    const [providerAppointments, setProviderAppointments] = useState([]);
 
-    const handleConfirmAppointment = () => {
-        const newAppointment = {
-            id: Date.now(),
-            serviceId: service.id,
-            serviceName: service.name,
-            category: service.category,
-            provider: service.provider,
-            date: selectedDate,
-            time: selectedTime,
-            duration: service.duration,
-            price: service.price,
-            status: "PENDING",
-        };
+    const convertTo24Hour = (time) => {
+        const [timePart, modifier] = time.split(" ");
+        let [hours, minutes] = timePart.split(":");
 
-        const existingAppointments = 
-           JSON.parse(localStorage.getItem("appointments")) || [];
+        if(modifier === "PM" && hours !== "12") {
+            hours = String(Number(hours) + 12);
+        }
 
-        const updatedAppointments = [
-            ...existingAppointments,
-            newAppointment,
-        ];
+        if(modifier === "AM" && hours === "12"){
+            hours = "00";
+        }
 
-        localStorage.setItem(
-            "appointments",
-            JSON.stringify(updatedAppointments)
+        return `${hours.padStart(2, "0")}:${minutes}:00`;
+    }
+
+    const generateAvailableSlots = () => {
+        if(!selectedDate || !service || !availability){
+            return [];
+        }
+
+        const date = new Date(`${selectedDate}T00:00:00`);
+
+        const dayName = date.toLocaleDateString("en-US",{
+            weekday: "long",
+        });
+
+        const dayAvailability = availability.find(
+            (item) => 
+                item.dayOfWeek.toLowerCase() ===
+            dayName.toLowerCase()
         );
 
-        setIsConfirmed(true);
+        if(!dayAvailability){
+            return [];
+        }
+
+        const slots = [];
+
+        let currentTime = dayAvailability.startTime.slice(0, 5);
+        const endTime = dayAvailability.endTime.slice(0, 5);
+
+        while(true){
+            const [hours, minutes] = currentTime
+                .split(":")
+                .map(Number);
+
+            const currentMinutes = hours * 60 + minutes;
+
+            const slotEndMinutes = 
+            currentMinutes + service.duration;
+
+            const [endHours, endMinutes] = endTime
+                .split(":")
+                .map(Number);
+
+            const availabilityEndMinutes = 
+                endHours * 60 + endMinutes;
+
+            if(slotEndMinutes > availabilityEndMinutes){
+                break;
+            }
+
+            const slotHours = Math.floor(currentMinutes / 60);
+            const slotMinutes = currentMinutes % 60;
+
+            const formattedTime = new Date(
+                2000,
+                0,
+                1,
+                slotHours,
+                slotMinutes
+            ).toLocaleTimeString("en-US",{
+                hour: "numeric",
+                minute: "2-digit",
+            });
+
+            const slotIsBooked = providerAppointments.some(
+                (appointment) => {
+                    if(
+                        appointment.appointmentDate !==
+                        selectedDate
+                    ){
+                        return false;
+                    }
+
+                    if(appointment.status === "CANCELLED"){
+                        return false;
+                    }
+
+                    const appointmentStart = 
+                        appointment.startTime.slice(0, 5);
+
+                    const appointmentEnd = 
+                        appointment.endTime.slice(0, 5);
+
+                    const [appointmentStartHour, appointmentStartMinute] =
+                        appointmentStart.split(":").map(Number);
+
+                    const [appointmentEndHour, appointmentEndMinute] = 
+                        appointmentEnd.split(":").map(Number);
+
+                    const appointmentStartMinutes = 
+                        appointmentStartHour * 60 +
+                        appointmentStartMinute;
+
+                    const appointmentEndMinutes = 
+                    appointmentEndHour * 60 +
+                    appointmentEndMinute;
+
+                    return (
+                        currentMinutes < appointmentEndMinutes &&
+                        slotEndMinutes > appointmentStartMinutes
+                    );
+                }
+            );
+
+            if(!slotIsBooked) {
+                slots.push(formattedTime);
+            }
+
+            const nextMinutes = 
+                currentMinutes + service.duration;
+
+            const nextHours = Math.floor(nextMinutes / 60);
+            const nextRemainingMinutes = nextMinutes % 60;
+
+            currentTime =
+                `${String(nextHours).padStart(2, "0")}:` +
+                `${String(nextRemainingMinutes).padStart(2, "0")}`;
+        }
+        return slots;
+    }
+
+    const availableSlots = generateAvailableSlots();
+
+    const handleConfirmAppointment = async () => {
+        setBookingError("");
+        try {
+            const appointmentData = {
+                appointmentDate: selectedDate,
+                startTime: convertTo24Hour(selectedTime),
+                status: "PENDING",
+                customer: {
+                    id: 1
+                },
+                service: {
+                    id: service.id
+                }
+            };
+            await createAppointment(appointmentData);
+            setIsConfirmed(true);
+        } catch (error) {
+            console.error("Booking failed:", error);
+
+            const message = 
+                error.response?.data?.message ||
+                error.response?.data ||
+                "Failed to book appointment. Please try again.";
+
+            setBookingError(message);
+        }
     };
+
+    if (loading) {
+        return(
+            <div className="min-h-screen bg-slate-50 px-6 py-16">
+                <div className="mx-auto max-w-3xl text-center">
+                    <p className="text-slate-500">
+                        Loading service...
+                    </p>
+                </div>
+            </div>
+        );
+    }
 
     if(!service) {
         return(
@@ -161,7 +327,7 @@ function BookAppointment() {
                             <input 
                                type="date"
                                value={selectedDate}
-                               onChange={(e) => setSelectedDate(e.target.value)}
+                               onChange={(e) => {setSelectedDate(e.target.value); setSelectedTime("");}}
                                min={new Date().toISOString().split("T")[0]}
                                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100 sm:max-w-sm"
                             />
